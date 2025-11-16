@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 8f99cd762cc9a854caf9124b237fbb65
+guid: c8e61123b2fee8545a64e0b2567015a5
 ModelImporter:
   serializedVersion: 24200
   internalIDToNameTable: []
@@ -8,17 +8,17 @@ ModelImporter:
       type: UnityEngine:Material
       assembly: UnityEngine.CoreModule
       name: SHD_eye
-    second: {fileID: 2100000, guid: 71d14d2f74eccea419cc12e106c22587, type: 2}
+    second: {fileID: 2100000, guid: 6425d61099785344dbd6d7b7a78c66e9, type: 2}
   - first:
       type: UnityEngine:Material
       assembly: UnityEngine.CoreModule
       name: SHD_frip
-    second: {fileID: 2100000, guid: 8fad247b9a177a2459fea1d3d76a9450, type: 2}
+    second: {fileID: 2100000, guid: b89e845f473321b44b1625b74d4e685c, type: 2}
   - first:
       type: UnityEngine:Material
       assembly: UnityEngine.CoreModule
       name: whiskers
-    second: {fileID: 2100000, guid: 947abcedf610aa046b2e463b8fb912e1, type: 2}
+    second: {fileID: 2100000, guid: 240c25c030061fb44ab4e74e1ca15f32, type: 2}
   materials:
     materialImportMode: 2
     materialName: 0
