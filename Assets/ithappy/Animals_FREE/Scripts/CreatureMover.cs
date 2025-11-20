@@ -14,7 +14,13 @@ namespace ithappy.Animals_FREE
         [SerializeField] private float m_RunSpeed = 4f;
         [SerializeField, Range(0f, 360f)] private float m_RotateSpeed = 90f;
         [SerializeField] private Space m_Space = Space.Self;
-        [SerializeField] private float m_JumpHeight = 5f;
+        [SerializeField, Tooltip("Maximum jump apex height in world units.")]
+        private float m_JumpHeight = 0.8f;
+        [Header("Gravity")]
+        [SerializeField, Tooltip("Multiplier applied to gravity while falling to make fall faster.")]
+        private float m_FallMultiplier = 2.5f;
+        [SerializeField, Tooltip("Maximum downward speed (positive value).")]
+        private float m_TerminalVelocity = 50f;
 
         [Header("Animator")]
         [SerializeField] private string m_VerticalID = "Vert";
@@ -42,7 +48,9 @@ namespace ithappy.Animals_FREE
         {
             m_WalkSpeed = Mathf.Max(m_WalkSpeed, 0f);
             m_RunSpeed = Mathf.Max(m_RunSpeed, m_WalkSpeed);
-            m_Movement?.SetStats(m_WalkSpeed / 3.6f, m_RunSpeed / 3.6f, m_RotateSpeed, m_JumpHeight, m_Space);
+            // Keep jump height in a reasonable range for small animals
+            m_JumpHeight = Mathf.Clamp(m_JumpHeight, 0f, 1.5f);
+            m_Movement?.SetStats(m_WalkSpeed / 3.6f, m_RunSpeed / 3.6f, m_RotateSpeed, m_JumpHeight, m_Space, m_FallMultiplier, m_TerminalVelocity);
         }
 
         private void Awake()
@@ -51,7 +59,7 @@ namespace ithappy.Animals_FREE
             m_Controller = GetComponent<CharacterController>();
             m_Animator = GetComponent<Animator>();
 
-            m_Movement = new MovementHandler(m_Controller, m_Transform, m_WalkSpeed, m_RunSpeed, m_RotateSpeed, m_JumpHeight, m_Space);
+            m_Movement = new MovementHandler(m_Controller, m_Transform, m_WalkSpeed, m_RunSpeed, m_RotateSpeed, m_JumpHeight, m_Space, m_FallMultiplier, m_TerminalVelocity);
             m_Animation = new AnimationHandler(m_Animator, m_VerticalID, m_StateID);
         }
 
@@ -131,9 +139,11 @@ namespace ithappy.Animals_FREE
 
             private float m_jumpTimer;
             private float m_VerticalVelocity = 0f;
+            private float m_FallMultiplier = 2.5f;
+            private float m_TerminalVelocity = 50f;
             private Vector3 m_LastForward;
 
-            public MovementHandler(CharacterController controller, Transform transform, float walkSpeed, float runSpeed, float rotateSpeed, float jumpHeight, Space space)
+            public MovementHandler(CharacterController controller, Transform transform, float walkSpeed, float runSpeed, float rotateSpeed, float jumpHeight, Space space, float fallMultiplier, float terminalVelocity)
             {
                 m_Controller = controller;
                 m_Transform = transform;
@@ -143,15 +153,19 @@ namespace ithappy.Animals_FREE
                 m_RotateSpeed = rotateSpeed;
                 m_JumpHeight = jumpHeight;
                 m_Space = space;
+                m_FallMultiplier = fallMultiplier;
+                m_TerminalVelocity = Mathf.Abs(terminalVelocity);
             }
 
-            public void SetStats(float walkSpeed, float runSpeed, float rotateSpeed, float jumpHeight, Space space)
+            public void SetStats(float walkSpeed, float runSpeed, float rotateSpeed, float jumpHeight, Space space, float fallMultiplier, float terminalVelocity)
             {
                 m_WalkSpeed = walkSpeed;
                 m_RunSpeed = runSpeed;
                 m_RotateSpeed = rotateSpeed;
                 m_JumpHeight = jumpHeight;
                 m_Space = space;
+                m_FallMultiplier = fallMultiplier;
+                m_TerminalVelocity = Mathf.Abs(terminalVelocity);
             }
 
             public void SetSurface(in Vector3 normal)
@@ -172,8 +186,6 @@ namespace ithappy.Animals_FREE
 
                 if (isJump && m_Controller.isGrounded)
                     m_VerticalVelocity = Mathf.Sqrt(-2f * Physics.gravity.y * m_JumpHeight);
-
-                movement.y = m_VerticalVelocity;
 
                 Displace(deltaTime, in movement, isRun);
                 Turn(in targetForward, isMoving);
@@ -203,13 +215,18 @@ namespace ithappy.Animals_FREE
 
             private void Displace(float deltaTime, in Vector3 movement, bool isRun)
             {
-                Vector3 displacement = (isRun ? m_RunSpeed : m_WalkSpeed) * movement;
-                displacement *= deltaTime;
+                var speed = (isRun ? m_RunSpeed : m_WalkSpeed);
+                Vector3 horizontal = new Vector3(movement.x, 0f, movement.z);
+                Vector3 displacement = speed * horizontal * deltaTime;
+                // Vertical movement should not be scaled by horizontal speed
+                displacement += Vector3.up * (m_VerticalVelocity * deltaTime);
                 m_Controller.Move(displacement);
             }
 
             private void CaculateGravity(float deltaTime, out bool isAir)
             {
+                m_jumpTimer = Mathf.Max(m_jumpTimer - deltaTime, 0f);
+
                 m_jumpTimer = Mathf.Max(m_jumpTimer - deltaTime, 0f);
 
                 if (m_Controller.isGrounded)
@@ -222,7 +239,19 @@ namespace ithappy.Animals_FREE
                 }
 
                 isAir = true;
-                m_VerticalVelocity += Physics.gravity.y * deltaTime;
+
+                // Apply gravity. Use a stronger gravity when falling to make fall feel snappier.
+                if (m_VerticalVelocity > 0f)
+                {
+                    m_VerticalVelocity += Physics.gravity.y * deltaTime;
+                }
+                else
+                {
+                    m_VerticalVelocity += Physics.gravity.y * m_FallMultiplier * deltaTime;
+                }
+
+                // Clamp to a terminal velocity
+                m_VerticalVelocity = Mathf.Max(m_VerticalVelocity, -Mathf.Abs(m_TerminalVelocity));
                 m_GravityAcelleration += Physics.gravity * deltaTime;
             }
 
