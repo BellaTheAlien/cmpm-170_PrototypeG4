@@ -1,5 +1,8 @@
+using System.Collections;
 using Unity.VisualScripting.Antlr3.Runtime.Misc;
 using UnityEngine;
+using UnityEngine.SceneManagement;
+
 
 public class HealthSystem : MonoBehaviour
 {
@@ -41,5 +44,18 @@ public class HealthSystem : MonoBehaviour
     public void Heal(float amount)
     {
         stats.AddHealth(amount);
+    }
+
+
+    public void ApplyFallDamage(float amount)
+    {
+        StartCoroutine(DelayedFallDamage(amount));
+    }
+
+    private IEnumerator DelayedFallDamage(float amount)
+    {
+        yield return new WaitForSeconds(0.5f);  
+        TakeDamage(amount);
+        Debug.Log("Fall damage applied: " + amount);
     }
 }

@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class PlayerStats : MonoBehaviour
 {
@@ -14,21 +15,31 @@ public class PlayerStats : MonoBehaviour
 
     private void Awake()
     {
-        if (PlayerPrefs.HasKey("Health"))
+        string currentScene = SceneManager.GetActiveScene().name;
+        bool isStartingScene = currentScene == "Redone Bedroom";
+
+        if (isStartingScene)
+        {
+            ResetStats();
+        }
+        else if (PlayerPrefs.HasKey("Health"))
         {
             LoadStats();
         }
         else
         {
-            // First time starting game
-            health = maxHealth;
-            hunger = 50f;
-            mood = maxMood;
+            ResetStats();  
         }
-
+        if (currentScene == "Alley Test")
+        {
+            // Apply fall damage once when entering this scene
+            GetComponent<HealthSystem>().ApplyFallDamage(40f);
+        }
     }
+
     
-    
+
+
     public void AddHealth(float amount)
     {
         health = Mathf.Clamp(health + amount, 0, maxHealth);
@@ -44,7 +55,18 @@ public class PlayerStats : MonoBehaviour
         mood = Mathf.Clamp(mood + amount, 0, maxMood);
     }
 
+    private void ResetStats()
+    {
+        PlayerPrefs.DeleteKey("Health");
+        PlayerPrefs.DeleteKey("Hunger");
+        PlayerPrefs.DeleteKey("Mood");
 
+        health = maxHealth;
+        hunger = 50f;
+        mood = maxMood;
+
+        SaveStats();
+    }
 
     public void SaveStats()
     {
