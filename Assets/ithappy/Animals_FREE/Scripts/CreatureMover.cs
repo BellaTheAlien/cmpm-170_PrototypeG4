@@ -16,6 +16,7 @@ namespace ithappy.Animals_FREE
         [SerializeField] private Space m_Space = Space.Self;
         [SerializeField, Tooltip("Maximum jump apex height in world units.")]
         private float m_JumpHeight = 0.8f;
+
         [Header("Gravity")]
         [SerializeField, Tooltip("Multiplier applied to gravity while falling to make fall faster.")]
         private float m_FallMultiplier = 2.5f;
@@ -48,9 +49,17 @@ namespace ithappy.Animals_FREE
         {
             m_WalkSpeed = Mathf.Max(m_WalkSpeed, 0f);
             m_RunSpeed = Mathf.Max(m_RunSpeed, m_WalkSpeed);
-            // Keep jump height in a reasonable range for small animals
             m_JumpHeight = Mathf.Clamp(m_JumpHeight, 0f, 1.5f);
-            m_Movement?.SetStats(m_WalkSpeed / 3.6f, m_RunSpeed / 3.6f, m_RotateSpeed, m_JumpHeight, m_Space, m_FallMultiplier, m_TerminalVelocity);
+
+            m_Movement?.SetStats(
+                m_WalkSpeed / 3.6f,
+                m_RunSpeed / 3.6f,
+                m_RotateSpeed,
+                m_JumpHeight,
+                m_Space,
+                m_FallMultiplier,
+                m_TerminalVelocity
+            );
         }
 
         private void Awake()
@@ -59,19 +68,40 @@ namespace ithappy.Animals_FREE
             m_Controller = GetComponent<CharacterController>();
             m_Animator = GetComponent<Animator>();
 
-            m_Movement = new MovementHandler(m_Controller, m_Transform, m_WalkSpeed, m_RunSpeed, m_RotateSpeed, m_JumpHeight, m_Space, m_FallMultiplier, m_TerminalVelocity);
+            m_Movement = new MovementHandler(
+                m_Controller,
+                m_Transform,
+                m_WalkSpeed,
+                m_RunSpeed,
+                m_RotateSpeed,
+                m_JumpHeight,
+                m_Space,
+                m_FallMultiplier,
+                m_TerminalVelocity
+            );
+
             m_Animation = new AnimationHandler(m_Animator, m_VerticalID, m_StateID);
         }
 
         private void Update()
         {
-            m_Movement.Move(Time.deltaTime, in m_Axis, in m_Target, m_IsRun, m_IsMoving, m_IsJump, out var animAxis, out var isAir);
+            m_Movement.Move(
+                Time.deltaTime,
+                in m_Axis,
+                in m_Target,
+                m_IsRun,
+                m_IsMoving,
+                m_IsJump,
+                out var animAxis,
+                out var isAir
+            );
+
             m_Animation.Animate(in animAxis, m_IsRun ? 1f : 0f, Time.deltaTime);
         }
 
         private void OnAnimatorIK()
         {
-            m_Animation.AnimateIK(in m_Target, m_LookWeight);
+            m_Animation.AnimateIK(in m_Target, in m_LookWeight);
         }
 
         public void SetInput(in Vector2 axis, in Vector3 target, in bool isRun, in bool isJump)
@@ -88,7 +118,7 @@ namespace ithappy.Animals_FREE
             }
             else
             {
-                m_Axis = Vector3.ClampMagnitude(m_Axis, 1f);
+                m_Axis = Vector2.ClampMagnitude(m_Axis, 1f);
                 m_IsMoving = true;
             }
         }
@@ -143,7 +173,22 @@ namespace ithappy.Animals_FREE
             private float m_TerminalVelocity = 50f;
             private Vector3 m_LastForward;
 
-            public MovementHandler(CharacterController controller, Transform transform, float walkSpeed, float runSpeed, float rotateSpeed, float jumpHeight, Space space, float fallMultiplier, float terminalVelocity)
+            // smoothed movement & accel/decel
+            private Vector3 m_SmoothedMovement = Vector3.zero;
+            private float m_Acceleration = 8f;
+            private float m_Deceleration = 10f;
+
+            public MovementHandler(
+                CharacterController controller,
+                Transform transform,
+                float walkSpeed,
+                float runSpeed,
+                float rotateSpeed,
+                float jumpHeight,
+                Space space,
+                float fallMultiplier,
+                float terminalVelocity
+            )
             {
                 m_Controller = controller;
                 m_Transform = transform;
@@ -157,7 +202,15 @@ namespace ithappy.Animals_FREE
                 m_TerminalVelocity = Mathf.Abs(terminalVelocity);
             }
 
-            public void SetStats(float walkSpeed, float runSpeed, float rotateSpeed, float jumpHeight, Space space, float fallMultiplier, float terminalVelocity)
+            public void SetStats(
+                float walkSpeed,
+                float runSpeed,
+                float rotateSpeed,
+                float jumpHeight,
+                Space space,
+                float fallMultiplier,
+                float terminalVelocity
+            )
             {
                 m_WalkSpeed = walkSpeed;
                 m_RunSpeed = runSpeed;
@@ -173,24 +226,53 @@ namespace ithappy.Animals_FREE
                 m_Normal = normal;
             }
 
-            public void Move(float deltaTime, in Vector2 axis, in Vector3 target, bool isRun, bool isMoving, bool isJump, out Vector2 animAxis, out bool isAir)
+            public void Move(
+                float deltaTime,
+                in Vector2 axis,
+                in Vector3 target,
+                bool isRun,
+                bool isMoving,
+                bool isJump,
+                out Vector2 animAxis,
+                out bool isAir
+            )
             {
                 var cameraLook = Vector3.Normalize(target - m_Transform.position);
                 var targetForward = m_LastForward;
 
                 ConvertMovement(in axis, in cameraLook, out var movement);
-                if (movement.sqrMagnitude > 0.5f)
-                    m_LastForward = Vector3.Normalize(movement);
+
+                // Smooth horizontal movement
+                if (movement.sqrMagnitude > 0.01f)
+                {
+                    m_SmoothedMovement = Vector3.Lerp(
+                        m_SmoothedMovement,
+                        movement,
+                        m_Acceleration * deltaTime
+                    );
+                }
+                else
+                {
+                    m_SmoothedMovement = Vector3.Lerp(
+                        m_SmoothedMovement,
+                        Vector3.zero,
+                        m_Deceleration * deltaTime
+                    );
+                }
+
+                if (m_SmoothedMovement.sqrMagnitude > 0.5f)
+                    m_LastForward = Vector3.Normalize(m_SmoothedMovement);
 
                 CaculateGravity(deltaTime, out isAir);
 
                 if (isJump && m_Controller.isGrounded)
                     m_VerticalVelocity = Mathf.Sqrt(-2f * Physics.gravity.y * m_JumpHeight);
 
-                Displace(deltaTime, in movement, isRun);
+                Displace(deltaTime, in m_SmoothedMovement, isRun);
                 Turn(in targetForward, isMoving);
                 UpdateRotation(deltaTime);
-                GenAnimationAxis(in movement, out animAxis);
+
+                GenAnimationAxis(in m_SmoothedMovement, out animAxis);
             }
 
             private void ConvertMovement(in Vector2 axis, in Vector3 targetForward, out Vector3 movement)
@@ -215,10 +297,9 @@ namespace ithappy.Animals_FREE
 
             private void Displace(float deltaTime, in Vector3 movement, bool isRun)
             {
-                var speed = (isRun ? m_RunSpeed : m_WalkSpeed);
+                var speed = isRun ? m_RunSpeed : m_WalkSpeed;
                 Vector3 horizontal = new Vector3(movement.x, 0f, movement.z);
                 Vector3 displacement = speed * horizontal * deltaTime;
-                // Vertical movement should not be scaled by horizontal speed
                 displacement += Vector3.up * (m_VerticalVelocity * deltaTime);
                 m_Controller.Move(displacement);
             }
@@ -226,7 +307,6 @@ namespace ithappy.Animals_FREE
             private void CaculateGravity(float deltaTime, out bool isAir)
             {
                 m_jumpTimer = Mathf.Max(m_jumpTimer - deltaTime, 0f);
-
                 m_jumpTimer = Mathf.Max(m_jumpTimer - deltaTime, 0f);
 
                 if (m_Controller.isGrounded)
@@ -240,7 +320,6 @@ namespace ithappy.Animals_FREE
 
                 isAir = true;
 
-                // Apply gravity. Use a stronger gravity when falling to make fall feel snappier.
                 if (m_VerticalVelocity > 0f)
                 {
                     m_VerticalVelocity += Physics.gravity.y * deltaTime;
@@ -250,7 +329,6 @@ namespace ithappy.Animals_FREE
                     m_VerticalVelocity += Physics.gravity.y * m_FallMultiplier * deltaTime;
                 }
 
-                // Clamp to a terminal velocity
                 m_VerticalVelocity = Mathf.Max(m_VerticalVelocity, -Mathf.Abs(m_TerminalVelocity));
                 m_GravityAcelleration += Physics.gravity * deltaTime;
             }
@@ -259,17 +337,27 @@ namespace ithappy.Animals_FREE
             {
                 if (m_Space == Space.Self)
                 {
-                    animAxis = new Vector2(Vector3.Dot(movement, m_Transform.right), Vector3.Dot(movement, m_Transform.forward));
+                    animAxis = new Vector2(
+                        Vector3.Dot(movement, m_Transform.right),
+                        Vector3.Dot(movement, m_Transform.forward)
+                    );
                 }
                 else
                 {
-                    animAxis = new Vector2(Vector3.Dot(movement, Vector3.right), Vector3.Dot(movement, Vector3.forward));
+                    animAxis = new Vector2(
+                        Vector3.Dot(movement, Vector3.right),
+                        Vector3.Dot(movement, Vector3.forward)
+                    );
                 }
             }
 
             private void Turn(in Vector3 targetForward, bool isMoving)
             {
-                var angle = Vector3.SignedAngle(m_Transform.forward, Vector3.ProjectOnPlane(targetForward, Vector3.up), Vector3.up);
+                var angle = Vector3.SignedAngle(
+                    m_Transform.forward,
+                    Vector3.ProjectOnPlane(targetForward, Vector3.up),
+                    Vector3.up
+                );
 
                 if (!m_IsRotating)
                 {
@@ -288,9 +376,7 @@ namespace ithappy.Animals_FREE
             private void UpdateRotation(float deltaTime)
             {
                 if (!m_IsRotating)
-                {
                     return;
-                }
 
                 var rotDelta = m_RotateSpeed * deltaTime;
                 if (rotDelta + Mathf.PI * 2f + Mathf.Epsilon >= Mathf.Abs(m_TargetAngle))
@@ -330,14 +416,25 @@ namespace ithappy.Animals_FREE
                 m_Animator.SetFloat(m_VerticalID, m_FlowAxis.magnitude);
                 m_Animator.SetFloat(m_StateID, Mathf.Clamp01(m_FlowState));
 
-                m_FlowAxis = Vector2.ClampMagnitude(m_FlowAxis + k_InputFlow * deltaTime * (axis - m_FlowAxis).normalized, 1f);
-                m_FlowState = Mathf.Clamp01(m_FlowState + k_InputFlow * deltaTime * Mathf.Sign(state - m_FlowState));
+                m_FlowAxis = Vector2.ClampMagnitude(
+                    m_FlowAxis + k_InputFlow * deltaTime * (axis - m_FlowAxis).normalized,
+                    1f
+                );
+
+                m_FlowState = Mathf.Clamp01(
+                    m_FlowState + k_InputFlow * deltaTime * Mathf.Sign(state - m_FlowState)
+                );
             }
 
             public void AnimateIK(in Vector3 target, in LookWeight lookWeight)
             {
                 m_Animator.SetLookAtPosition(target);
-                m_Animator.SetLookAtWeight(lookWeight.weight, lookWeight.body, lookWeight.head, lookWeight.eyes);
+                m_Animator.SetLookAtWeight(
+                    lookWeight.weight,
+                    lookWeight.body,
+                    lookWeight.head,
+                    lookWeight.eyes
+                );
             }
         }
         #endregion
