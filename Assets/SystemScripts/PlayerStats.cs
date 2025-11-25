@@ -14,10 +14,18 @@ public class PlayerStats : MonoBehaviour
 
     private void Awake()
     {
-        health = maxHealth;
-        hunger = 50f;
-            //maxHunger;
-        mood = maxMood;
+        if (PlayerPrefs.HasKey("Health"))
+        {
+            LoadStats();
+        }
+        else
+        {
+            // First time starting game
+            health = maxHealth;
+            hunger = 50f;
+            mood = maxMood;
+        }
+
     }
     
     
@@ -34,5 +42,22 @@ public class PlayerStats : MonoBehaviour
     public void AddMood(float amount)
     {
         mood = Mathf.Clamp(mood + amount, 0, maxMood);
+    }
+
+
+
+    public void SaveStats()
+    {
+        PlayerPrefs.SetFloat("Health", health);
+        PlayerPrefs.SetFloat("Hunger", hunger);
+        PlayerPrefs.SetFloat("Mood", mood);
+        PlayerPrefs.Save();
+    }
+
+    public void LoadStats()
+    {
+        health = PlayerPrefs.GetFloat("Health", maxHealth);
+        hunger = PlayerPrefs.GetFloat("Hunger", maxHunger);
+        mood = PlayerPrefs.GetFloat("Mood", maxMood);
     }
 }

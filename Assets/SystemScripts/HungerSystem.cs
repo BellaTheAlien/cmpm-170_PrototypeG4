@@ -3,7 +3,7 @@ using UnityEngine;
 public class HungerSystem : MonoBehaviour
 {
     public PlayerStats stats;
-    public float drainPerSecond = 1f;
+    public float drainPerSecond = 2f;
 
     private void Update()
     {

@@ -15,6 +15,7 @@ public class BetweenScene : MonoBehaviour
     void OnTriggerEnter (Collider other)
         {
             Debug.Log ("A collider has entered the DoorObject trigger");
+            FindFirstObjectByType<PlayerStats>().SaveStats();
             SceneManager.LoadScene (sceneName:"Alley Test");
             
         }
