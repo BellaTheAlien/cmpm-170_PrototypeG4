@@ -5,6 +5,8 @@ public class HungerSystem : MonoBehaviour
     public PlayerStats stats;
     public float drainPerSecond = 2f;
 
+    public AudioSource eatSound;
+
     private void Update()
     {
         stats.AddHunger(-drainPerSecond * Time.deltaTime);
@@ -18,6 +20,8 @@ public class HungerSystem : MonoBehaviour
         if (other.CompareTag("Food"))
         {
             stats.AddHunger(+100);
+            if (eatSound != null) eatSound.Play();
+
             Destroy(other.gameObject);
         }
     }
