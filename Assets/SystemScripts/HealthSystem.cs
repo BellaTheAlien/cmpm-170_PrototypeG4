@@ -7,6 +7,7 @@ using UnityEngine.SceneManagement;
 public class HealthSystem : MonoBehaviour
 {
     public PlayerStats stats;
+    public GameOverScreen GameOverScreen;
 
     [Header("Regeneration")]
     public bool enableRegen = false;
@@ -50,6 +51,10 @@ public class HealthSystem : MonoBehaviour
     public void ApplyFallDamage(float amount)
     {
         StartCoroutine(DelayedFallDamage(amount));
+    }
+
+    public void gameOver(){
+        GameOverScreen.Setup(stats.health);
     }
 
     private IEnumerator DelayedFallDamage(float amount)
