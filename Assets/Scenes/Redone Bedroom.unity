@@ -3598,7 +3598,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HealthSystem
   stats: {fileID: 1655723088}
-  GameOverScreen: {fileID: 0}
+  GameOverScreen: {fileID: 656362919}
   enableRegen: 0
   regenPerSecond: 0
   destroyOnDeath: 0

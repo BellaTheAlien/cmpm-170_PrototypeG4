@@ -6,7 +6,7 @@ public class GameOverScreen : MonoBehaviour
 {
     public void Setup(float health){
         if (health <= 0){
-        gameObject.SetActive(true);
+            gameObject.SetActive(true);
         }
     }
 

@@ -27,7 +27,7 @@ public class HealthSystem : MonoBehaviour
         if (stats.health <= 0)
         {
             Debug.Log("Player died!");
-
+            GameOverScreen.Setup(stats.health);
             if (destroyOnDeath)
             {
                 Destroy(gameObject);
