@@ -11,7 +11,7 @@ public class PlayerStats : MonoBehaviour
     [Header("Current Values")]
     public float health;
     public float hunger;
-    public float mood;
+    public float mood = 0f;
 
     private void Awake()
     {
@@ -35,9 +35,14 @@ public class PlayerStats : MonoBehaviour
             // Apply fall damage once when entering this scene
             GetComponent<HealthSystem>().ApplyFallDamage(40f);
         }
+
+        
+    }
+    public void Start()
+    {
+        PlayerPrefs.DeleteAll();
     }
 
-    
 
 
     public void AddHealth(float amount)
@@ -63,7 +68,7 @@ public class PlayerStats : MonoBehaviour
 
         health = maxHealth;
         hunger = 50f;
-        mood = maxMood;
+        mood = 0f;
 
         SaveStats();
     }
@@ -80,6 +85,6 @@ public class PlayerStats : MonoBehaviour
     {
         health = PlayerPrefs.GetFloat("Health", maxHealth);
         hunger = PlayerPrefs.GetFloat("Hunger", maxHunger);
-        mood = PlayerPrefs.GetFloat("Mood", maxMood);
+        mood = PlayerPrefs.GetFloat("Mood", 0f);
     }
 }
