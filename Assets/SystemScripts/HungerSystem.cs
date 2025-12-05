@@ -3,7 +3,7 @@ using UnityEngine;
 public class HungerSystem : MonoBehaviour
 {
     public PlayerStats stats;
-    public float drainPerSecond = 2f;
+    public float drainPerSecond = 5f;
 
     public AudioSource eatSound;
 
@@ -19,7 +19,7 @@ public class HungerSystem : MonoBehaviour
     {
         if (other.CompareTag("Food"))
         {
-            stats.AddHunger(+100);
+            stats.AddHunger(+50);
             if (eatSound != null) eatSound.Play();
 
             Destroy(other.gameObject);

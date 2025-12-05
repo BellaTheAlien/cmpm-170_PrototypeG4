@@ -1577,7 +1577,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9e72dda652b92d949a81f661695160ea, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::StarPickup
-  moodValue: 33.33
+  moodValue: 1
 --- !u!1 &728946476 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 940749174376110611, guid: a92b9330d674d3c4ba84c34e3df76494, type: 3}
@@ -3797,7 +3797,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HungerSystem
   stats: {fileID: 1655723088}
-  drainPerSecond: 1
+  drainPerSecond: 5
   eatSound: {fileID: 2053478221}
 --- !u!114 &1655723088
 MonoBehaviour:
@@ -3813,7 +3813,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerStats
   maxHealth: 100
   maxHunger: 100
-  maxMood: 100
+  maxMood: 3
   health: 0
   hunger: 0
   mood: 0

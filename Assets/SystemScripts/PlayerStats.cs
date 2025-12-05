@@ -6,7 +6,7 @@ public class PlayerStats : MonoBehaviour
     [Header("Max Values")]
     public float maxHealth = 100f;
     public float maxHunger = 100f;
-    public float maxMood = 100f;
+    public float maxMood = 3f;
 
     [Header("Current Values")]
     public float health;
